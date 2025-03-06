@@ -16,7 +16,7 @@ async function connectDB() {
             bufferCommands: false
         };
 
-        cached.promise = mongoose.connect(process.env.MONGO_URI , opts)
+        cached.promise = mongoose.connect(`${process.env.MONGO_URI}/quickcart` , opts)
             .then((mongoose) => mongoose)
             .catch((err) => {
                 console.error("MongoDB connection error:", err);

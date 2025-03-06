@@ -51,16 +51,23 @@ export  const syncUserUpdation = inngest.createFunction(
 )
 
 //inngest function to delete data in databse 
-
 export const syncUserDeletion = inngest.createFunction(
-    {
-        id:'delete -user-from-clerk'
-    },
-    {event:'clerk/user.deleted'},
-    async({event})=>{
-        const id= event.data
-        
-        await connectDB()
-        await User.findByIdAndDelete(id)
+    { id: "delete-user-from-clerk" }, // ✅ Fix ID formatting
+    { event: "clerk/user.deleted" }, // ✅ Fix event formatting
+    async ({ event }) => {
+        try {
+            const userId = event.data?.id; // ✅ Extract correct ID
+
+            if (!userId || typeof userId !== "string") {
+                throw new Error("❌ Invalid user ID received.");
+            }
+
+            console.log(`🗑️ Deleting user with ID: ${userId}`);
+            await User.findByIdAndDelete(userId);
+
+            console.log(`✅ User ${userId} deleted successfully`);
+        } catch (error) {
+            console.error("❌ Error deleting user:", error);
+        }
     }
-)
+);

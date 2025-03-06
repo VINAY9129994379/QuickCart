@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config(); // Load environment variables
 
 let cached = global.mongoose;
 
@@ -7,24 +10,29 @@ if (!cached) {
 }
 
 async function connectDB() {
-    if (cached.conn) return cached.conn;
+    if (cached.conn) {
+        return cached.conn;
+    }
 
     if (!cached.promise) {
+        if (!process.env.MONGODB_URI) {
+            throw new Error("❌ MONGODB_URI is not defined in environment variables");
+        }
+
         const opts = {
             bufferCommands: false,
-            serverSelectionTimeoutMS: 5000,  // Increase timeout
-            socketTimeoutMS: 45000,         // Ensure enough time for queries
-            maxPoolSize: 10,                // Optimize for serverless
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
         };
 
-        cached.promise = mongoose.connect(process.env.MONGO_URI, opts)
+        cached.promise = mongoose.connect(process.env.MONGODB_URI, opts)
             .then((mongoose) => {
-                console.log("MongoDB connected");
+                console.log("✅ MongoDB connected successfully");
                 return mongoose;
             })
             .catch((err) => {
-                console.error("MongoDB connection error:", err.message);
-                cached.promise = null; // Reset promise for retry
+                console.error("❌ MongoDB connection error:", err);
+                cached.promise = null; // Reset promise to allow retrying
                 throw err;
             });
     }
@@ -32,7 +40,7 @@ async function connectDB() {
     try {
         cached.conn = await cached.promise;
     } catch (err) {
-        throw new Error(`Database connection failed: ${err.message}`);
+        throw new Error("❌ Failed to connect to database");
     }
 
     return cached.conn;

@@ -7,20 +7,24 @@ if (!cached) {
 }
 
 async function connectDB() {
-    if (cached.conn) {
-        return cached.conn;
-    }
+    if (cached.conn) return cached.conn;
 
     if (!cached.promise) {
         const opts = {
-            bufferCommands: false
+            bufferCommands: false,
+            serverSelectionTimeoutMS: 5000,  // Increase timeout
+            socketTimeoutMS: 45000,         // Ensure enough time for queries
+            maxPoolSize: 10,                // Optimize for serverless
         };
 
-        cached.promise = mongoose.connect(`${process.env.MONGO_URI}/quickcart` , opts)
-            .then((mongoose) => mongoose)
+        cached.promise = mongoose.connect(process.env.MONGO_URI, opts)
+            .then((mongoose) => {
+                console.log("MongoDB connected");
+                return mongoose;
+            })
             .catch((err) => {
-                console.error("MongoDB connection error:", err);
-                cached.promise = null; // Reset promise to allow retrying
+                console.error("MongoDB connection error:", err.message);
+                cached.promise = null; // Reset promise for retry
                 throw err;
             });
     }
@@ -28,7 +32,7 @@ async function connectDB() {
     try {
         cached.conn = await cached.promise;
     } catch (err) {
-        throw new Error("Failed to connect to database");
+        throw new Error(`Database connection failed: ${err.message}`);
     }
 
     return cached.conn;
